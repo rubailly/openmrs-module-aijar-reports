@@ -1,8 +1,11 @@
 package org.openmrs.module.aijarreports.reports;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
+import org.openmrs.api.context.Context;
 import org.openmrs.module.aijarreports.library.ARTClinicCohortDefinitionLibrary;
 import org.openmrs.module.aijarreports.library.BasePatientDataLibrary;
 import org.openmrs.module.aijarreports.library.DataFactory;
@@ -16,6 +19,7 @@ import org.openmrs.module.reporting.evaluation.parameter.Mapped;
 import org.openmrs.module.reporting.evaluation.parameter.Parameter;
 import org.openmrs.module.reporting.report.ReportDesign;
 import org.openmrs.module.reporting.report.definition.ReportDefinition;
+import org.openmrs.module.reporting.report.service.ReportService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -107,9 +111,34 @@ public class SetupDailyAppointmentsList extends AijarDataExportManager {
 
 		rd.addDataSetDefinition(getName(), Mapped.mapStraightThrough(dsd));
 
+		ReportDesign design;
+		try {
+			design = Helper.createRowPerPatientXlsOverviewReportDesign(rd, "DailyAppointmentsList.xls", "DailyAppointmentsList.xls_", null);
+			Properties props = new Properties();
+			props.put("repeatingSections", "sheet:1,row:9,dataset:DAL");
+			props.put("sortWeight","5000");
+			design.setProperties(props);
+
+			Helper.saveReportDesign(design);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	
+
 		return rd;
 	}
 
+	public void delete() {
+		ReportService rs = Context.getService(ReportService.class);
+		for (ReportDesign rd : rs.getAllReportDesigns(false)) {
+			if ("DailyAppointmentsList.xls_".equals(rd.getName())) {
+				rs.purgeReportDesign(rd);
+			}
+		}
+		Helper.purgeReportDefinition("Daily Appointments List");
+	}
 	@Override
 	public String getVersion() {
 		return "0.1";
